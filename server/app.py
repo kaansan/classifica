@@ -1,15 +1,20 @@
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 
-from handlers import GetUserTweets
+import redis
+from handlers import AnalyzeTrackHandler
 
 
 def make_app():
     urls = [
-        (r"/", GetUserTweets),
-    ]
+        (r'/analyze', AnalyzeTrackHandler),
+    ] 
+  
+    store = redis.Redis(host='localhost', port=6379, db=0)
 
-    return Application(urls, debug=True)
+    settings = {'store': store}
+
+    return Application(urls, debug=True, **settings)
 
 
 if __name__ == "__main__":
