@@ -1,26 +1,99 @@
-.App {
-  text-align: center;
+@import url('https://fonts.googleapis.com/css2?family=Oswald&display=swap');
+
+html, body {
+  height: 100%;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  font-family: 'Oswald', sans-serif;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.container {
+  display: flex;
+  height: 100vh;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
-.App-header {
-  background-color: white;
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 100%;
+  flex: 2;
+}
+
+.tracks-column {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 100%;
+  flex: 1;
+  position: relative;
+}
+
+.classificaSection {
+  background-color: #162B32;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: black;
+}
+
+.tracksSection {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: black;
+  max-height: 100vh;
+  background-color: white;
+  position: absolute;
+  flex-flow: row wrap;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+.header {
+  color: #FF4838;
+  font-size: 50px;
+}
+
+.input {
+  margin: 10px;
+}
+
+.artist-track {
+  padding: 5px;
+}
+
+.track-lyrics {
+  padding: 8px;
+}
+
+.card {
+  border: 2px black solid;
+  border-radius: 12px;
+  background-color: wheat;
+  margin-top: 5%;
+  width: 450px;
+}
+
+.emojis {
+  margin-right: 20px;
+  justify-content: center;
+}
