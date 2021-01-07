@@ -17,7 +17,7 @@ def make_app():
     store = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
     settings = {'store': store}
 
-    return Application(urls, debug=True, **settings)
+    return Application(urls, **settings)
 
 
 if __name__ == "__main__":

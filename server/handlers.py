@@ -52,7 +52,7 @@ class BaseHandler(RequestHandler):
     def store(self):
         return self.settings['store']
 
-    def handle_request(response):
+    def handle_request(self, response):
         if response.error:
             print("Error:", response.error)
         else:
@@ -115,8 +115,8 @@ class AnalyzeTrackHandler(BaseHandler):
                 status = message['header']['status_code']
                 if status == 200:
                     lyrics = body['lyrics']['lyrics_body']
-                    # inspect first 500 chars
-                    clean_lyrics = lyrics.replace('\n', ' ')[:500]
+                    # inspect first 400 chars
+                    clean_lyrics = lyrics.replace('\n', ' ')[:400]
                     new_text = tokenize.sent_tokenize(clean_lyrics)[0]
                     analysis = self.analyzer.polarity_scores(new_text)
                     analysis_sorted = sorted(analysis.items(),

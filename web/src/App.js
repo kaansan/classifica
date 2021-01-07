@@ -17,6 +17,8 @@ import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
 import { Input, Image, List } from 'semantic-ui-react';
 
+const { REACT_APP_SERVER, REACT_APP_SERVER_PORT } = process.env;
+
 function Alert(props) {
     return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
@@ -59,7 +61,7 @@ class App extends Component {
                 body: JSON.stringify({ artist, track })
             }
 
-            fetch('http://localhost:8888/analyze', options)
+            fetch(`${REACT_APP_SERVER}:${REACT_APP_SERVER_PORT}/analyze`, options)
                 .then(response => response.json())
                 .then(data => {
                     const exist = analyzedTexts.find((text) => text.track === data.track)
