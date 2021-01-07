@@ -2,7 +2,8 @@
 A web app for sentiment analysis of track lyrics with using musicmatch and discogs api
 
 # Showcase
-![Alt Text](https://media.giphy.com/media/vFKqnCdLPNOKc/giphy.gif)
+<img src="https://media.giphy.com/media/iyjgyI0KEUSuQnp5Ja/giphy.gif" alt="classifica" width="600"/>
+
 
 # Project stack
 - Python, ReactJS, Redis, Tornado
