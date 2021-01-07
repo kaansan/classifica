@@ -11,6 +11,7 @@ from tornado.httpclient import AsyncHTTPClient
 from config import (api_key, base_url, search_endpoint,
                     lyrics_endpoint, token, artist_search_url)
 
+
 class BaseHandler(RequestHandler):
 
     def set_default_headers(self):
