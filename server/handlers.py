@@ -5,6 +5,7 @@ import json
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk import tokenize
 
+from urllib.parse import quote
 from tornado.web import RequestHandler
 from tornado import escape, gen
 from tornado.httpclient import AsyncHTTPClient
@@ -78,64 +79,103 @@ class AnalyzeTrackHandler(BaseHandler):
         return image
 
     @gen.coroutine
+    def search_track(self, artist, track_name):
+        url = self.get_url(base_url, search_endpoint,
+                           f'&q_artist={artist}', f'&q_track={track_name}')
+        request = yield self.http_client.fetch(url, self.handle_request)
+        data = escape.json_decode(request.body)
+        message = data.get('message', {})
+        body = message.get("body")
+        track_list = body.get('track_list')
+
+        data = {}
+        if track_list:
+            track = track_list[0]['track']
+            track_id = track['track_id']
+            artist_name = track['artist_name']
+            track_title = track['track_name']
+            track_url = track['track_share_url']
+            data.update({
+                'track_id': track_id,
+                'artist_name': artist_name,
+                'track_title': track_title,
+                'track_url': track_url
+            })
+
+            return data
+
+        return data
+
+    @gen.coroutine
+    def get_track_lyrics(self, track_id):
+        lyrics_url = self.get_url(base_url, lyrics_endpoint,
+                                  f'&track_id={track_id}')
+
+        lyrics_request = yield self.http_client.fetch(lyrics_url,
+                                                      self.handle_request)
+
+        data = escape.json_decode(lyrics_request.body)
+        message = data.get('message', {})
+        body = message.get('body', {})
+        if body:
+            lyrics = body.get('lyrics', {}).get('lyrics_body')
+
+            return lyrics
+
+        return None
+
+    @gen.coroutine
+    def setup_track_data(self, lyrics, artist_name, track_name, track_url):
+        clean_lyrics = lyrics.replace('\n', ' ')[:400]
+        new_text = tokenize.sent_tokenize(clean_lyrics)[0]
+        analysis = self.analyzer.polarity_scores(new_text)
+        analysis_sorted = sorted(analysis.items(),
+                                 key=operator.itemgetter(1),
+                                 reverse=True)
+        sentiment = {k: v for k, v in analysis_sorted
+                     if k not in 'compound'}
+        winner = max(sentiment, key=sentiment.get)
+        image = yield self.get_artist_image(artist_name)
+        data = {'sentiment': sentiment,
+                'lyrics': clean_lyrics,
+                'track': track_name,
+                'artist': artist_name,
+                'winner': winner,
+                'track_url': track_url,
+                'image': image}
+
+        return data
+
+    @gen.coroutine
     def post(self):
-        artist, track = self.get_json_data('artist', 'track')
+        artist, track_name = self.get_json_data('artist', 'track')
 
-        artist = artist.replace(' ', '%20')
-        track = track.replace(' ', '%20')
-
-        track_exist = self.store.get(track.encode('ascii'))
+        # replacing spaces with %20
+        artist = quote(artist)
+        track_name = quote(track_name)
+        track_exist = self.store.get(track_name.encode('ascii'))
 
         if track_exist:
             self.write(json.loads(track_exist))
             return
 
-        url = self.get_url(base_url, search_endpoint,
-                           f'&q_artist={artist}', f'&q_track={track}')
+        # Search track
+        track = yield self.search_track(artist, track_name)
+        track_id = track.get('track_id')
 
-        request = yield self.http_client.fetch(url, self.handle_request)
-        data = escape.json_decode(request.body)
-        track_status = data['message']['header']['status_code']
-        if track_status == 200:
-            data = escape.json_decode(request.body)
-            track_list = data.get('message').get('body').get('track_list')
-            if (track_list):
-                track_id = track_list[0]['track']['track_id']
-                artist_name = track_list[0]['track']['artist_name']
-                track_name = track_list[0]['track']['track_name']
-                track_url = track_list[0]['track']['track_share_url']
-                lyrics_url = self.get_url(base_url, lyrics_endpoint,
-                                          f'&track_id={track_id}')
-                lyrics_request = yield self.http_client.fetch(
-                                       lyrics_url,
-                                       self.handle_request)
-
-                data = escape.json_decode(lyrics_request.body)
-                message = data['message']
-                body = message['body']
-                status = message['header']['status_code']
-                if status == 200:
-                    lyrics = body['lyrics']['lyrics_body']
-                    # inspect first 400 chars
-                    clean_lyrics = lyrics.replace('\n', ' ')[:400]
-                    new_text = tokenize.sent_tokenize(clean_lyrics)[0]
-                    analysis = self.analyzer.polarity_scores(new_text)
-                    analysis_sorted = sorted(analysis.items(),
-                                             key=operator.itemgetter(1),
-                                             reverse=True)
-                    sentiment = {k: v for k, v in analysis_sorted
-                                 if k not in 'compound'}
-                    winner = max(sentiment, key=sentiment.get)
-                    image = yield self.get_artist_image(artist_name)
-                    data = {'sentiment': sentiment, 'lyrics': clean_lyrics,
-                            'track': track_name, 'artist': artist_name,
-                            'winner': winner, 'track_url': track_url,
-                            'image': image}
-                    self.store.set(track, json.dumps(data))
-                    self.write(data)
-                else:
-                    self.write({'error': 'Lyrics are not avaliable'})
+        if track_id:
+            artist_name = track.get('artist_name')
+            track_title = track.get('track_title')
+            track_url = track.get('track_url')
+            # Get lyrics
+            lyrics = yield self.get_track_lyrics(track_id)
+            if lyrics:
+                # Set up the data
+                data = yield self.setup_track_data(lyrics, artist_name,
+                                                   track_title, track_url)
+                self.store.set(track_name, json.dumps(data))
+                self.write(data)
             else:
-                self.write({'error': 'Artist and Track is not avaliable'})
+                self.write({'error': 'Lyrics are not avaliable'})
         else:
-            self.write({'error': 'Artist is not valid'})
+            self.write({'error': 'Artist and Track is not avaliable'})
